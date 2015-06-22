@@ -4,6 +4,7 @@ set(Caffe_LINKER_LIBS "")
 # ---[ Boost
 set(Boost_COMPONENTS system thread)
 if(MSVC)
+    # todo move these options to project config
     set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_MULTITHREAD ON)
     set(Boost_USE_STATIC_RUNTIME OFF)
