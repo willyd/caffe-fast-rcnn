@@ -7,8 +7,8 @@
 
 #include "boost/algorithm/string.hpp"
 #include "caffe/caffe.hpp"
-#ifdef _MSV_VER
-#include "caffe_force_link.h"
+#ifdef _MSC_VER
+#include "caffe_reference_symbols.h"
 #endif
 
 using caffe::Blob;
@@ -190,8 +190,8 @@ int test() {
   for (int i = 0; i < test_score.size(); ++i) {
     const std::string& output_name = caffe_net.blob_names()[
         caffe_net.output_blob_indices()[test_score_output_id[i]]];
-    const float loss_weight =
-        caffe_net.blob_loss_weights()[caffe_net.output_blob_indices()[i]];
+    const float loss_weight = caffe_net.blob_loss_weights()[
+        caffe_net.output_blob_indices()[test_score_output_id[i]]];
     std::ostringstream loss_msg_stream;
     const float mean_score = test_score[i] / FLAGS_iterations;
     if (loss_weight) {
