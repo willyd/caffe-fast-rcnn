@@ -4,7 +4,16 @@
 if(BUILD_SHARED_LIBS)
   set(Caffe_LINK caffe)
 else()
-  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  if(MSVC)
+      set(Caffe_LINK caffe)
+      # Not sure if these flags are needed anymore
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE    "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:NOREF")
+      set(CMAKE_EXE_LINKER_FLAGS_DEBUG      "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /OPT:NOREF")
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:NOREF")
+      set(CMAKE_SHARED_LINKER_FLAGS_DEBUG   "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /OPT:NOREF")
+      set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} /OPT:NOREF")
+      set(CMAKE_MODULE_LINKER_FLAGS_DEBUG   "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} /OPT:NOREF")
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(Caffe_LINK -Wl,-force_load caffe)
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(Caffe_LINK -Wl,--whole-archive caffe -Wl,--no-whole-archive)
@@ -110,6 +119,10 @@ function(caffe_default_properties target)
     ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib"
     LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib"
     RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+  # make sure we build all external depepdencies first
+  if (DEFINED external_project_dependencies)
+    add_dependencies(${target} ${external_project_dependencies})
+  endif()
 endfunction()
 
 ################################################################################################
