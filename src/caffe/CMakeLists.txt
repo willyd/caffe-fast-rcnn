@@ -12,11 +12,10 @@ caffe_default_properties(proto)
 # creates 'test_srcs', 'srcs', 'test_cuda', 'cuda' lists
 caffe_pickup_caffe_sources(${PROJECT_SOURCE_DIR})
 
-#if(HAVE_CUDA)
-#  caffe_cuda_compile(cuda_objs ${cuda})
-#  list(APPEND srcs ${cuda_objs} ${cuda})
-  list(APPEND srcs ${cuda})
-#endif()
+if(HAVE_CUDA)
+  caffe_cuda_compile(cuda_objs ${cuda})
+  list(APPEND srcs ${cuda_objs} ${cuda})
+endif()
 
 set(caffe_symbol_reference_header "${CMAKE_BINARY_DIR}/caffe_reference_symbols.h")
 list(APPEND srcs ${caffe_symbol_reference_header})
@@ -45,11 +44,7 @@ else()
     )
 endif()
 
-if(HAVE_CUDA)
-cuda_add_library(caffe ${srcs})
-else()
 add_library(caffe ${srcs})
-endif()
 target_link_libraries(caffe proto ${Caffe_LINKER_LIBS})
 caffe_default_properties(caffe)
 
@@ -59,6 +54,7 @@ caffe_default_properties(caffe)
 # ---[ Install
 install(DIRECTORY ${Caffe_INCLUDE_DIR}/caffe DESTINATION include)
 install(FILES ${proto_hdrs} DESTINATION include/caffe/proto)
+install(FILES ${caffe_symbol_reference_header} DESTINATION include)
 install(TARGETS caffe proto EXPORT CaffeTargets DESTINATION lib)
 
 file(WRITE ${PROJECT_BINARY_DIR}/__init__.py)
