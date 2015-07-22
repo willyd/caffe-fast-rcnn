@@ -60,7 +60,11 @@ add_subdirectory(matlab)
 add_subdirectory(docs)
 
 # ---[ Linter target
-add_custom_target(lint COMMAND ${CMAKE_COMMAND} -DMSVC=${MSVC} -P ${PROJECT_SOURCE_DIR}/cmake/lint.cmake)
+if(MSVC)
+  find_package(PythonInterp 2)
+  set(PYTHON2_EXECUTABLE ${PYTHON_EXECUTABLE} CACHE FILEPATH "Path to the python 2.x executable")
+endif()
+add_custom_target(lint COMMAND ${CMAKE_COMMAND} -DMSVC=${MSVC} -DPYTHON2_EXECUTABLE=${PYTHON2_EXECUTABLE} -P ${PROJECT_SOURCE_DIR}/cmake/lint.cmake)
 
 # ---[ Configuration summary
 caffe_print_configuration_summary()

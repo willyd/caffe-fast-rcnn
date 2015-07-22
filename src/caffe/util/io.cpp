@@ -51,7 +51,7 @@ bool ReadProtoFromBinaryFile(const char* filename, Message* proto) {
 #ifndef _MSC_VER
   int flags = O_RDONLY;
 #else
-	int flags = O_RDONLY | O_BINARY;
+  int flags = O_RDONLY | O_BINARY;
 #endif
   int fd = open(filename, flags);
   CHECK_NE(fd, -1) << "File not found: " << filename;

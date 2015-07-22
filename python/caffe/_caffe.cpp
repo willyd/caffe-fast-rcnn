@@ -16,9 +16,6 @@
 
 #include "caffe/caffe.hpp"
 #include "caffe/python_layer.hpp"
-#ifdef _MSC_VER
-#include "caffe_force_link.h"
-#endif
 
 // Temporary solution for numpy < 1.7 versions: old macro, no promises.
 // You're strongly advised to upgrade to >= 1.7.

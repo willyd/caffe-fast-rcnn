@@ -16,6 +16,11 @@
 #include <utility>  // pair
 #include <vector>
 
+#ifdef _MSC_VER
+// fence this include inside VS specific macro
+// to avoid breaking the Linux Makefile build
+#include "caffe/export.hpp"
+#endif
 #include "caffe/util/device_alternate.hpp"
 
 // gflags 2.1 issue: namespace google was changed to gflags without warning.
@@ -35,9 +40,10 @@ private:\
 
 
 #ifndef _MSC_VER
-#define DEFINE_FORCE_LINK_SYMBOL(classname, token) 
+#define DEFINE_FORCE_LINK_SYMBOL(classname, token)
 #else
-#define DEFINE_FORCE_LINK_SYMBOL(classname, token)  int g_caffe_force_link_##token##_##classname = 0
+#define DEFINE_FORCE_LINK_SYMBOL(classname, token) \
+  int g_caffe_force_link_##token##_##classname = 0
 #endif
 
 // Instantiate a class with float and double specifications.
@@ -54,7 +60,7 @@ private:\
   template void classname<double>::Forward_gpu( \
       const std::vector<Blob<double>*>& bottom, \
       const std::vector<Blob<double>*>& top); \
-      DEFINE_FORCE_LINK_SYMBOL(forward_gpu);
+      DEFINE_FORCE_LINK_SYMBOL(classname, forward_gpu);
 
 #define INSTANTIATE_LAYER_GPU_BACKWARD(classname) \
   template void classname<float>::Backward_gpu( \
@@ -65,7 +71,7 @@ private:\
       const std::vector<Blob<double>*>& top, \
       const std::vector<bool>& propagate_down, \
       const std::vector<Blob<double>*>& bottom); \
-      DEFINE_FORCE_LINK_SYMBOL(backward_gpu);
+      DEFINE_FORCE_LINK_SYMBOL(classname, backward_gpu);
 
 #define INSTANTIATE_LAYER_GPU_FUNCS(classname) \
   INSTANTIATE_LAYER_GPU_FORWARD(classname); \
