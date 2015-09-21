@@ -1,11 +1,6 @@
-# generate protobuf sources
-file(GLOB proto_files proto/*.proto)
-caffe_protobuf_generate_cpp_py(${proto_gen_folder} proto_srcs proto_hdrs proto_python ${proto_files})
+# --[ Proto
 
-# include python files either to force generation
-add_library(proto STATIC ${proto_hdrs} ${proto_srcs} ${proto_python})
-set(Caffe_LINKER_LIBS proto ${Caffe_LINKER_LIBS}) # note, crucial to prepend!
-caffe_default_properties(proto)
+add_subdirectory(proto)
 
 # --[ Caffe library
 
@@ -55,11 +50,9 @@ target_compile_definitions(caffe PRIVATE -DBUILDING_CAFFE_LIB)
 # ---[ Install
 install(DIRECTORY ${Caffe_INCLUDE_DIR}/caffe DESTINATION include)
 install(FILES ${export_header} DESTINATION include/caffe)
-install(FILES ${proto_hdrs} DESTINATION include/caffe/proto)   
-install(TARGETS caffe proto EXPORT CaffeTargets DESTINATION lib)
 
-file(WRITE ${PROJECT_BINARY_DIR}/__init__.py)
-list(APPEND proto_python ${PROJECT_BINARY_DIR}/__init__.py)
-install(PROGRAMS ${proto_python} DESTINATION python/caffe/proto)
+install(TARGETS caffe EXPORT CaffeTargets DESTINATION lib)
+
+
 
 

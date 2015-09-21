@@ -3,6 +3,8 @@ set(Caffe_LINKER_LIBS "")
 
 # ---[ Boost
 if(MSVC)
+
+    # Disable automatic linking 
     add_definitions(-DBOOST_ALL_NO_LIB)    
 endif()
 find_package(Boost 1.46 REQUIRED COMPONENTS system thread)

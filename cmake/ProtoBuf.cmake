@@ -21,9 +21,14 @@ if(PROTOBUF_FOUND)
   unset(GOOGLE_PROTOBUF_VERSION)
 endif()
 
+
+################################################################################################
+# Includes the directory where protoc generates the files 
+# See https://github.com/BVLC/caffe/issues/2987
 # place where to generate protobuf sources
-set(proto_gen_folder "${PROJECT_BINARY_DIR}/include/caffe/proto")
-include_directories(SYSTEM "${PROJECT_BINARY_DIR}/include")
+set(proto_gen_folder "${PROJECT_BINARY_DIR}/src/caffe/proto")
+include_directories(SYSTEM "${PROJECT_BINARY_DIR}/src")
+include_directories(SYSTEM "${PROJECT_BINARY_DIR}/include") # Do we need this anymore
 
 set(PROTOBUF_GENERATE_CPP_APPEND_PATH TRUE)
 
@@ -71,16 +76,18 @@ function(caffe_protobuf_generate_cpp_py output_dir srcs_var hdrs_var python_var)
     list(APPEND ${srcs_var} "${output_dir}/${fil_we}.pb.cc")
     list(APPEND ${hdrs_var} "${output_dir}/${fil_we}.pb.h")
     list(APPEND ${python_var} "${output_dir}/${fil_we}_pb2.py")
+  
 
     add_custom_command(
       OUTPUT "${output_dir}/${fil_we}.pb.cc"
              "${output_dir}/${fil_we}.pb.h"
              "${output_dir}/${fil_we}_pb2.py"
       COMMAND ${CMAKE_COMMAND} -E make_directory "${output_dir}"
-      COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --cpp_out    ${output_dir} ${_protoc_include} ${abs_fil}
-      COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --python_out ${output_dir} ${_protoc_include} ${abs_fil}
+      COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} 
+      ARGS --cpp_out ${output_dir} --python_out ${output_dir} ${_protoc_include} ${abs_fil}
       DEPENDS ${abs_fil}
-      COMMENT "Running C++/Python protocol buffer compiler on ${fil}" VERBATIM )
+      COMMENT "Running C++/Python protocol buffer compiler on ${fil}" 
+      VERBATIM )
   endforeach()
 
   set_source_files_properties(${${srcs_var}} ${${hdrs_var}} ${${python_var}} PROPERTIES GENERATED TRUE)

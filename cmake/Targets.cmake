@@ -13,6 +13,12 @@ else()
       set(CMAKE_SHARED_LINKER_FLAGS_DEBUG   "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /OPT:NOREF")
       set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} /OPT:NOREF")
       set(CMAKE_MODULE_LINKER_FLAGS_DEBUG   "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} /OPT:NOREF")
+      
+      foreach(_suffix "" _RELEASE _DEBUG)
+        set(CMAKE_CXX_FLAGS${_suffix} "${CMAKE_CXX_FLAGS${_suffix}} /FS")
+        set(CMAKE_C_FLAGS${_suffix} "${CMAKE_CXX_FLAGS${_suffix}} /FS")              
+      endforeach()
+      
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(Caffe_LINK -Wl,-force_load caffe)
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
