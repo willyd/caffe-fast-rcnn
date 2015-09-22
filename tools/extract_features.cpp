@@ -21,11 +21,6 @@ using boost::shared_ptr;
 using std::string;
 namespace db = caffe::db;
 
-#ifdef _MSC_VER
-#define uint uint32_t
-#endif  // _MSC_VER
-
-
 template<typename Dtype>
 int feature_extraction_pipeline(int argc, char** argv);
 
@@ -57,7 +52,7 @@ int feature_extraction_pipeline(int argc, char** argv) {
   arg_pos = num_required_args;
   if (argc > arg_pos && strcmp(argv[arg_pos], "GPU") == 0) {
     LOG(ERROR)<< "Using GPU";
-    uint device_id = 0;
+    uint32_t device_id = 0;
     if (argc > arg_pos + 1) {
       device_id = atoi(argv[arg_pos + 1]);
       CHECK_GE(device_id, 0);
