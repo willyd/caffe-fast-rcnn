@@ -45,7 +45,11 @@ void mxCHECK_FILE_EXIST(const char* file) {
 static vector<shared_ptr<Solver<float> > > solvers_;
 static vector<shared_ptr<Net<float> > > nets_;
 // init_key is generated at the beginning and everytime you call reset
+#ifndef _MSC_VER
 static double init_key = static_cast<double>(caffe_rng_rand());
+#else
+static double init_key = -2;
+#endif
 
 /** -----------------------------------------------------------------
  ** data conversion functions
@@ -478,6 +482,63 @@ static void read_mean(MEX_ARGS) {
   mxFree(mean_proto_file);
 }
 
+#ifdef _MSC_VER
+static bool is_log_inited = false;
+
+static void glog_failure_handler() {
+  static bool is_glog_failure = false;
+  if (!is_glog_failure) {
+    is_glog_failure = true;
+    ::google::FlushLogFiles(0);
+    mexErrMsgTxt("glog check error, please check log and clear mex");
+  }
+}
+
+static void protobuf_log_handler(::google::protobuf::LogLevel level,
+  const char* filename, int line, const std::string& message) {
+  const int kMaxErrLength = 512;
+  char err_message[kMaxErrLength];
+  sprintf_s(err_message, kMaxErrLength, "Protobuf : %s . at %s Line %d",
+    message.c_str(), filename, line);
+  LOG(INFO) << err_message;
+  ::google::FlushLogFiles(0);
+  mexErrMsgTxt(err_message);
+}
+
+// Usage: caffe_('init_log', log_base_filename)
+static void init_log(MEX_ARGS) {
+  mxCHECK(nrhs == 1 && mxIsChar(prhs[0]),
+    "Usage: caffe_('init_log', log_dir)");
+  if (is_log_inited)
+    ::google::ShutdownGoogleLogging();
+  char* log_base_filename = mxArrayToString(prhs[0]);
+  ::google::SetLogDestination(0, log_base_filename);
+  mxFree(log_base_filename);
+  ::google::protobuf::SetLogHandler(&protobuf_log_handler);
+  ::google::InitGoogleLogging("caffe_mex");
+  ::google::InstallFailureFunction(&glog_failure_handler);
+
+  is_log_inited = true;
+}
+
+void initGlog() {
+  if (is_log_inited) return;
+  string log_dir = ".\\log\\";
+  std::string now_time = boost::posix_time::to_iso_extended_string(
+    boost::posix_time::second_clock::local_time());
+  now_time[13] = '-';
+  now_time[16] = '-';
+  string log_file = log_dir + "INFO" + now_time + ".txt";
+  const char* log_base_filename = log_file.c_str();
+  ::google::SetLogDestination(0, log_base_filename);
+  ::google::protobuf::SetLogHandler(&protobuf_log_handler);
+  ::google::InitGoogleLogging("caffe_mex");
+  ::google::InstallFailureFunction(&glog_failure_handler);
+
+  is_log_inited = true;
+}
+#endif
+
 /** -----------------------------------------------------------------
  ** Available commands.
  **/
@@ -515,6 +576,9 @@ static handler_registry handlers[] = {
   { "get_init_key",       get_init_key    },
   { "reset",              reset           },
   { "read_mean",          read_mean       },
+#ifdef _MSC_VER
+  { "init_log",           init_log        },
+#endif
   // The end.
   { "END",                NULL            },
 };
@@ -524,6 +588,10 @@ static handler_registry handlers[] = {
  **/
 // Usage: caffe_(api_command, arg1, arg2, ...)
 void mexFunction(MEX_ARGS) {
+  if (init_key == -2) {
+    init_key = static_cast<double>(caffe_rng_rand());
+  initGlog();
+  }
   mexLock();  // Avoid clearing the mex file.
   mxCHECK(nrhs > 0, "Usage: caffe_(api_command, arg1, arg2, ...)");
   // Handle input command

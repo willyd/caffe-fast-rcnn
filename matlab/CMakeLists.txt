@@ -16,23 +16,12 @@ else()
   return()
 endif()
 
-if(NOT BUILD_SHARED_LIBS AND build_using MATCHES Matlab)
-  message(FATAL_ERROR "Matlab MEX interface (with default mex options file) can only be built if caffe is compiled as shared library. Please enable 'BUILD_SHARED_LIBS' in CMake. Aternativelly you can switch to Octave compiler.")
+if(NOT MSVC AND NOT BUILD_SHARED_LIBS AND build_using MATCHES Matlab)
+  message(FATAL_ERROR "Matlab MEX interface (with default mex options file) can only be built if caffe is compiled as shared library on UNIX systems. Please enable 'BUILD_SHARED_LIBS' in CMake. Aternativelly you can switch to Octave compiler.")
 endif()
-
-# helper function to set proper mex file extention
-function(caffe_fetch_and_set_proper_mexext mexfile_variable)
-  execute_process(COMMAND ${Matlab_mexext} OUTPUT_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE res OUTPUT_VARIABLE ext)
-  if(res MATCHES 0)
-    get_filename_component(folder  ${${mexfile_variable}} PATH)
-    get_filename_component(name_we ${${mexfile_variable}} NAME_WE)
-    set(${mexfile_variable} ${folder}/${name_we}.${ext} PARENT_SCOPE)
-  endif()
-endfunction()
 
 # global settings
 file(GLOB Matlab_srcs +caffe/private/caffe_.cpp)
-set(Matlab_caffe_mex ${PROJECT_SOURCE_DIR}/matlab/+caffe/private/caffe_.mex)
 
 caffe_get_current_cflags(cflags)
 caffe_parse_linker_libs(Caffe_LINKER_LIBS folders libflags macos_frameworks)
@@ -43,15 +32,21 @@ string(REPLACE ";" ";-L" link_folders "-L${folders}")
 string(REPLACE ";" ":"  rpath_folders   "${folders}")
 
 if(build_using MATCHES "Matlab")
-  set(libflags -lcaffe${Caffe_POSTFIX} ${libflags}) # Matlab R2014a complans for -Wl,--whole-archive
+  # keep this line as a reminder of the linker problems
+  #set(libflags -lcaffe${Caffe_POSTFIX} ${libflags}) # Matlab R2014a complans for -Wl,--whole-archive
 
-  caffe_fetch_and_set_proper_mexext(Matlab_caffe_mex)
-  add_custom_command(OUTPUT ${Matlab_caffe_mex} COMMAND ${Matlab_mex}
-      ARGS -output ${Matlab_caffe_mex} ${Matlab_srcs} ${cflags} ${link_folders} ${libflags}
-      DEPENDS caffe COMMENT "Building Matlab interface: ${Matlab_caffe_mex}" VERBATIM)
-  add_custom_target(matlab ALL DEPENDS ${Matlab_caffe_mex} SOURCES ${Matlab_srcs})
+  matlab_add_mex(NAME matlab
+                 SRC ${Matlab_srcs} # maybe you need to add some other sources
+                 OUTPUT_NAME caffe_ # change the output name to _caffe.mexw64
+                 LINK_TO caffe # cmake will take care of forwarding the correct transitive library dependencies to your mex file
+                 )
+  # output the target in the source tree as in the original version. 
+  set_target_properties(matlab PROPERTIES 
+                        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/matlab/+caffe/private
+                        )
 
 elseif(build_using MATCHES "Octave")
+    set(Matlab_caffe_mex ${PROJECT_SOURCE_DIR}/matlab/+caffe/private/caffe_.mex)
 
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(libflags -Wl,-force_load,$<TARGET_LINKER_FILE:caffe> ${libflags})
