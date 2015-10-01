@@ -17,7 +17,7 @@
 #define  mkdir(str, mode) _mkdir(str)
 
 #define __builtin_popcount __popcnt
-#define __builtin_popcountl __popcnt
+#define __builtin_popcountl __popcnt64
 
 #endif  // _MSC_VER
 

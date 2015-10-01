@@ -9,7 +9,20 @@ caffe_pickup_caffe_sources(${PROJECT_SOURCE_DIR})
 
 if(HAVE_CUDA)
   # define preprocessor macro so that we will not include the generated forcelink header
-  caffe_cuda_compile(cuda_objs ${cuda} OPTIONS -DBUILDING_CAFFE_LIB)
+  list(APPEND _additional_definitions -DBUILDING_CAFFE_LIB)
+  # get definitions from import libraries as they are not forwarded to nvcc
+  # see http://www.cmake.org/Bug/view.php?id=14201
+  foreach(_lib ${Caffe_LINKER_LIBS})
+    if(TARGET ${_lib})
+        get_target_property(_compiled_defs ${_lib} INTERFACE_COMPILE_DEFINITIONS)
+        if(_compiled_defs)
+            foreach(_compiled_def ${_compiled_defs})
+                list(APPEND _additional_definitions -D${_compiled_def})
+            endforeach()
+        endif()
+    endif()
+  endforeach()
+  caffe_cuda_compile(cuda_objs ${cuda} OPTIONS ${_additional_definitions})
   list(APPEND srcs ${cuda_objs} ${cuda})
 endif()
 

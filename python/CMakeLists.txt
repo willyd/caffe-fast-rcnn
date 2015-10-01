@@ -21,8 +21,9 @@ if(UNIX OR APPLE)
                        COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/python/caffe/proto
                        COMMAND touch ${PROJECT_SOURCE_DIR}/python/caffe/proto/__init__.py
                        COMMAND cp ${proto_gen_folder}/*.py ${PROJECT_SOURCE_DIR}/python/caffe/proto/
-                       COMMENT "Creating symlink ${__linkname} -> ${PROJECT_BINARY_DIR}/lib/_caffe${CAffe_POSTFIX}.so")
+                       COMMENT "Creating symlink ${__linkname} -> ${PROJECT_BINARY_DIR}/lib/_caffe${Caffe_POSTFIX}.so")
 elseif(WIN32)
+    message("${proto_gen_folder}")
     add_custom_command(TARGET pycaffe POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:pycaffe> ${PROJECT_SOURCE_DIR}/python/caffe
                        COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/python/caffe/proto

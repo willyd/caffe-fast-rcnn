@@ -2,16 +2,12 @@
 set(Caffe_LINKER_LIBS "")
 
 # ---[ Boost
-set(Boost_COMPONENTS system thread)
 if(MSVC)
-    # todo move these options to project config
-    set(Boost_USE_STATIC_LIBS ON)
-    set(Boost_USE_MULTITHREAD ON)
-    set(Boost_USE_STATIC_RUNTIME OFF)
-    add_definitions(-DBOOST_ALL_NO_LIB)
-    list(APPEND Boost_COMPONENTS filesystem date_time)
+
+    # Disable automatic linking 
+    add_definitions(-DBOOST_ALL_NO_LIB)    
 endif()
-find_package(Boost 1.46 REQUIRED COMPONENTS ${Boost_COMPONENTS})
+find_package(Boost 1.46 REQUIRED COMPONENTS system thread)
 include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 list(APPEND Caffe_LINKER_LIBS ${Boost_LIBRARIES})
 
@@ -20,15 +16,12 @@ find_package(Threads REQUIRED)
 list(APPEND Caffe_LINKER_LIBS ${CMAKE_THREAD_LIBS_INIT})
 
 # ---[ Google-gflags
-find_package(GFlags REQUIRED)
+include("cmake/External/gflags.cmake")
 include_directories(SYSTEM ${GFLAGS_INCLUDE_DIRS})
 list(APPEND Caffe_LINKER_LIBS ${GFLAGS_LIBRARIES})
 
 # ---[ Google-glog
-if(MSVC)
-    add_definitions(-DGOOGLE_GLOG_DLL_DECL=)
-endif()
-find_package(Glog REQUIRED)
+include("cmake/External/glog.cmake")
 include_directories(SYSTEM ${GLOG_INCLUDE_DIRS})
 list(APPEND Caffe_LINKER_LIBS ${GLOG_LIBRARIES})
 
@@ -36,30 +29,32 @@ list(APPEND Caffe_LINKER_LIBS ${GLOG_LIBRARIES})
 include(cmake/ProtoBuf.cmake)
 
 # ---[ HDF5
-find_package(HDF5 COMPONENTS HL)
-if(NOT HDF5_FOUND)
-    find_package(HDF5 COMPONENTS HL REQUIRED CONFIG)      
-endif()
-if(HDF5_FOUND AND NOT HDF5_HL_INCLUDE_DIR)
-    set(HDF5_HL_INCLUDE_DIR ${HDF5_INCLUDE_DIRS})
-endif()
+find_package(HDF5 COMPONENTS HL REQUIRED)
 include_directories(SYSTEM ${HDF5_INCLUDE_DIRS} ${HDF5_HL_INCLUDE_DIR})
 list(APPEND Caffe_LINKER_LIBS ${HDF5_LIBRARIES})
 
 # ---[ LMDB
-find_package(LMDB REQUIRED)
-include_directories(SYSTEM ${LMDB_INCLUDE_DIR})
-list(APPEND Caffe_LINKER_LIBS ${LMDB_LIBRARIES})
+if(USE_LMDB)
+  find_package(LMDB REQUIRED)
+  include_directories(SYSTEM ${LMDB_INCLUDE_DIR})
+  list(APPEND Caffe_LINKER_LIBS ${LMDB_LIBRARIES})
+  add_definitions(-DUSE_LMDB)
+endif()
 
 # ---[ LevelDB
-find_package(LevelDB REQUIRED)
-include_directories(SYSTEM ${LevelDB_INCLUDE})
-list(APPEND Caffe_LINKER_LIBS ${LevelDB_LIBRARIES})
+if(USE_LEVELDB)
+  find_package(LevelDB REQUIRED)
+  include_directories(SYSTEM ${LevelDB_INCLUDE})
+  list(APPEND Caffe_LINKER_LIBS ${LevelDB_LIBRARIES})
+  add_definitions(-DUSE_LEVELDB)
+endif()
 
 # ---[ Snappy
-find_package(Snappy REQUIRED)
-include_directories(SYSTEM ${Snappy_INCLUDE_DIR})
-list(APPEND Caffe_LINKER_LIBS ${Snappy_LIBRARIES})
+if(USE_LEVELDB)
+  find_package(Snappy REQUIRED)
+  include_directories(SYSTEM ${Snappy_INCLUDE_DIR})
+  list(APPEND Caffe_LINKER_LIBS ${Snappy_LIBRARIES})
+endif()
 
 # ---[ CUDA
 include(cmake/Cuda.cmake)
@@ -75,13 +70,16 @@ if(NOT HAVE_CUDA)
 endif()
 
 # ---[ OpenCV
-find_package(OpenCV QUIET COMPONENTS core highgui imgproc imgcodecs)
-if(NOT OpenCV_FOUND) # if not OpenCV 3.x, then imgcodecs are not found
-  find_package(OpenCV REQUIRED COMPONENTS core highgui imgproc)
+if(USE_OPENCV)
+  find_package(OpenCV QUIET COMPONENTS core highgui imgproc imgcodecs)
+  if(NOT OpenCV_FOUND) # if not OpenCV 3.x, then imgcodecs are not found
+    find_package(OpenCV REQUIRED COMPONENTS core highgui imgproc)
+  endif()
+  include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
+  list(APPEND Caffe_LINKER_LIBS ${OpenCV_LIBS})
+  message(STATUS "OpenCV found (${OpenCV_CONFIG_PATH})")
+  add_definitions(-DUSE_OPENCV)
 endif()
-include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
-list(APPEND Caffe_LINKER_LIBS ${OpenCV_LIBS})
-message(STATUS "OpenCV found (${OpenCV_CONFIG_PATH})")
 
 # ---[ BLAS
 if(NOT APPLE)
@@ -124,14 +122,15 @@ if(BUILD_python)
     
     while(NOT "${version}" STREQUAL "" AND NOT Boost_PYTHON_FOUND)
       STRING( REGEX REPLACE "([0-9.]+).[0-9]+" "\\1" version ${version} )
-      STRING( REGEX MATCHALL "([0-9.]+).[0-9]+" has_more_version ${version} )
-      if("${has_more_version}" STREQUAL "")
-        break()
-      endif()
       
       STRING( REPLACE "." "" boost_py_version ${version} )
       find_package(Boost 1.46 COMPONENTS "python-py${boost_py_version}")
       set(Boost_PYTHON_FOUND ${Boost_PYTHON-PY${boost_py_version}_FOUND})
+      
+      STRING( REGEX MATCHALL "([0-9.]+).[0-9]+" has_more_version ${version} )
+      if("${has_more_version}" STREQUAL "")
+        break()
+      endif()
     endwhile()
     if(NOT Boost_PYTHON_FOUND)
       find_package(Boost 1.46 COMPONENTS python)
@@ -146,25 +145,20 @@ if(BUILD_python)
   if(PYTHONLIBS_FOUND AND NUMPY_FOUND AND Boost_PYTHON_FOUND)
     set(HAVE_PYTHON TRUE)
     if(BUILD_python_layer)
-      add_definitions(-DWITH_PYTHON_LAYER)
-      if(MSVC)
+      if(Boost_USE_STATIC_LIBS AND MSVC)
         add_definitions(-DBOOST_PYTHON_STATIC_LIB)
       endif()
+      add_definitions(-DWITH_PYTHON_LAYER)
       include_directories(SYSTEM ${PYTHON_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
       list(APPEND Caffe_LINKER_LIBS ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})
-      find_package(Boost 1.46 COMPONENTS regex)
-      if (Boost_REGEX_FOUND)
-        include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-        list(APPEND Caffe_LINKER_LIBS ${Boost_LIBRARIES})
-      endif()
     endif()
-  endif()
+  endif()  
 endif()
 
 # ---[ Matlab
 if(BUILD_matlab)
-  find_package(MatlabMex)
-  if(MATLABMEX_FOUND)
+  find_package(Matlab COMPONENTS MAIN_PROGRAM MX_LIBRARY)
+  if(MATLAB_FOUND)
     set(HAVE_MATLAB TRUE)
   endif()
 

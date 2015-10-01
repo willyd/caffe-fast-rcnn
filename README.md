@@ -1,3 +1,16 @@
+# Caffe Windows Fork
+
+This is a fork of Caffe that introduces support for building with Visual Studio. This library is best built with [caffe-builder](https://github.com/willyd/caffe-builder). I would like to give special thanks to @niuzhiheng for the initial Windows port and @happynear for providing parts of the Windows specific implementation. 
+
+### Volunteers wanted!
+There is ongoing work to make the Windows bits included in the upstream project but this is too much work for a single person. If you are interested in contributing please let me know.
+
+## News (2015-09-22)
+
+* Added support for building Matlab bindings
+* Added support for building with Ninja based generators
+* Added experimental support for building with CuDNN
+
 # Caffe
 
 Caffe is a deep learning framework made with expression, speed, and modularity in mind.

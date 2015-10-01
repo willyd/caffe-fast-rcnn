@@ -1,12 +1,12 @@
 # Finds Google Protocol Buffers library and compilers and extends
-# the standart cmake script with version and python generation support
+# the standard cmake script with version and python generation support
 
 find_package( Protobuf REQUIRED )
 include_directories(SYSTEM ${PROTOBUF_INCLUDE_DIR})
 list(APPEND Caffe_LINKER_LIBS ${PROTOBUF_LIBRARIES})
 
 # As of Ubuntu 14.04 protoc is no longer a part of libprotobuf-dev package
-# and should be installed  separately as in: sudo apt-get install protobuf-compiler
+# and should be installed separately as in: sudo apt-get install protobuf-compiler
 if(EXISTS ${PROTOBUF_PROTOC_EXECUTABLE})
   message(STATUS "Found PROTOBUF Compiler: ${PROTOBUF_PROTOC_EXECUTABLE}")
 else()
@@ -76,13 +76,13 @@ function(caffe_protobuf_generate_cpp_py output_dir srcs_var hdrs_var python_var)
     list(APPEND ${srcs_var} "${output_dir}/${fil_we}.pb.cc")
     list(APPEND ${hdrs_var} "${output_dir}/${fil_we}.pb.h")
     list(APPEND ${python_var} "${output_dir}/${fil_we}_pb2.py")
-    
-    file(MAKE_DIRECTORY "${output_dir}")
+  
 
     add_custom_command(
       OUTPUT "${output_dir}/${fil_we}.pb.cc"
              "${output_dir}/${fil_we}.pb.h"
              "${output_dir}/${fil_we}_pb2.py"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${output_dir}"
       COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} 
       ARGS --cpp_out ${output_dir} --python_out ${output_dir} ${_protoc_include} ${abs_fil}
       DEPENDS ${abs_fil}
